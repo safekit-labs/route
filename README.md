@@ -160,24 +160,6 @@ The package supports any validation library that follows the Standard Schema spe
 - Custom validators
 - Any Standard Schema compatible library
 
-### Zod Example
-
-```typescript
-import { z } from "zod";
-
-const router = createRouter().register([
-  {
-    path: "/users/:userId",
-    params: z.object({
-      userId: z.string().uuid(),
-    }),
-    query: z.object({
-      page: z.number().min(1).optional(),
-    }),
-  },
-]);
-```
-
 ### Custom Validation
 
 ```typescript
@@ -196,33 +178,7 @@ const router = createRouter().register([
 ]);
 ```
 
-## Query String Serialization
 
-The package uses `qs` for query string serialization by default, which handles nested objects and arrays gracefully. Choose from multiple query string formats:
-
-```typescript
-import { createRouter, querySerializers } from "@safekit/route";
-
-// Bracket style (default): arrays get brackets - a[]=b&a[]=c, scalars don't - b=value
-const router1 = createRouter({
-  serializeQuery: querySerializers.brackets,
-});
-
-// Comma style: a=b,c
-const router2 = createRouter({
-  serializeQuery: querySerializers.comma,
-});
-
-// Native style: a=b&a=c
-const router3 = createRouter({
-  serializeQuery: querySerializers.native,
-});
-
-// Index style: a[0]=b&a[1]=c
-const router4 = createRouter({
-  serializeQuery: querySerializers.indices,
-});
-```
 
 ### Nested Objects and Complex Query Parameters
 
@@ -274,6 +230,37 @@ const url = await router.href({
 
 // Default (brackets) serialization output:
 // https://api.example.com/users?filter[status]=active&filter[age]=21&filter[userIds][]=abc1&filter[userIds][]=xyz2&orderBy[][field]=lastName&orderBy[][direction]=asc&orderBy[][field]=createdAt&orderBy[][direction]=desc&page=20&limit=10
+```
+
+## Query String Serialization
+
+Choose from multiple query string formats:
+
+```typescript
+import { createRouter, querySerializers } from "@safekit/route";
+
+createRouter({ serializeQuery: querySerializers.brackets });
+createRouter({ serializeQuery: querySerializers.comma });
+createRouter({ serializeQuery: querySerializers.native });
+createRouter({ serializeQuery: querySerializers.indices });
+```
+
+**Arrays:**
+```ts
+const query = { tags: ["a", "b"] }
+// Brackets (default): tags[]=a&tags[]=b
+// Comma:              tags=a,b
+// Native:             tags=a&tags=b
+// Indices:            tags[0]=a&tags[1]=b
+```
+
+**Objects:**
+```ts
+const query = { filter: { status: "active", type: "user" } }
+// Brackets (default): filter[status]=active&filter[type]=user
+// Comma:              filter[status]=active&filter[type]=user
+// Native:             filter={"status":"active","type":"user"}
+// Indices:            filter[status]=active&filter[type]=user
 ```
 
 ## Contributing

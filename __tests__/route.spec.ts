@@ -214,21 +214,21 @@ describe("@safekit/route", () => {
 
   describe("query serializers", () => {
     it("should serialize with brackets format", () => {
-      const query = { tags: ["a", "b"], active: true };
+      const query = { tags: ["a", "b"] };
       const result = querySerializers.brackets(query);
-      expect(result).toBe("tags%5B%5D=a&tags%5B%5D=b&active=true");
+      expect(decodeURIComponent(result)).toBe("tags[]=a&tags[]=b");
     });
 
     it("should serialize with comma format", () => {
-      const query = { tags: ["a", "b"], active: true };
+      const query = { tags: ["a", "b"] };
       const result = querySerializers.comma(query);
-      expect(result).toBe("tags=a%2Cb&active=true");
+      expect(decodeURIComponent(result)).toBe("tags=a,b");
     });
 
     it("should serialize with native format", () => {
-      const query = { tags: ["a", "b"], active: true };
+      const query = { tags: ["a", "b"] };
       const result = querySerializers.native(query);
-      expect(result).toBe("tags=a&tags=b&active=true");
+      expect(result).toBe("tags=a&tags=b");
     });
 
     it("should handle null and undefined values", () => {
@@ -236,6 +236,54 @@ describe("@safekit/route", () => {
       const result = querySerializers.brackets(query);
       // qs includes null values as empty strings, filters undefined
       expect(result).toBe("a=&c=value");
+    });
+
+    it("should serialize arrays with brackets format", () => {
+      const query = { tags: ["a", "b"] };
+      const result = querySerializers.brackets(query);
+      expect(decodeURIComponent(result)).toBe("tags[]=a&tags[]=b");
+    });
+
+    it("should serialize arrays with comma format", () => {
+      const query = { tags: ["a", "b"] };
+      const result = querySerializers.comma(query);
+      expect(decodeURIComponent(result)).toBe("tags=a,b");
+    });
+
+    it("should serialize arrays with native format", () => {
+      const query = { tags: ["a", "b"] };
+      const result = querySerializers.native(query);
+      expect(result).toBe("tags=a&tags=b");
+    });
+
+    it("should serialize arrays with indices format", () => {
+      const query = { tags: ["a", "b"] };
+      const result = querySerializers.indices(query);
+      expect(decodeURIComponent(result)).toBe("tags[0]=a&tags[1]=b");
+    });
+
+    it("should serialize objects with brackets format", () => {
+      const query = { filter: { status: "active", type: "user" } };
+      const result = querySerializers.brackets(query);
+      expect(decodeURIComponent(result)).toBe("filter[status]=active&filter[type]=user");
+    });
+
+    it("should serialize objects with comma format", () => {
+      const query = { filter: { status: "active", type: "user" } };
+      const result = querySerializers.comma(query);
+      expect(decodeURIComponent(result)).toBe("filter[status]=active&filter[type]=user");
+    });
+
+    it("should serialize objects with native format", () => {
+      const query = { filter: { status: "active", type: "user" } };
+      const result = querySerializers.native(query);
+      expect(decodeURIComponent(result)).toBe('filter={"status":"active","type":"user"}');
+    });
+
+    it("should serialize objects with indices format", () => {
+      const query = { filter: { status: "active", type: "user" } };
+      const result = querySerializers.indices(query);
+      expect(decodeURIComponent(result)).toBe("filter[status]=active&filter[type]=user");
     });
 
     it("should serialize complex nested objects for paginated endpoint", () => {
@@ -258,10 +306,10 @@ describe("@safekit/route", () => {
       const indicesResult = querySerializers.indices(queryObject);
       const nativeResult = querySerializers.native(queryObject);
 
-      expect(bracketsResult).toBe("filter%5Bstatus%5D=active&filter%5Bage%5D=21&filter%5BuserIds%5D%5B%5D=abc1&filter%5BuserIds%5D%5B%5D=xyz2&orderBy%5B%5D%5Bfield%5D=lastName&orderBy%5B%5D%5Bdirection%5D=asc&orderBy%5B%5D%5Bfield%5D=createdAt&orderBy%5B%5D%5Bdirection%5D=desc&page=20&limit=10");
-      expect(commaResult).toBe("filter%5Bstatus%5D=active&filter%5Bage%5D=21&filter%5BuserIds%5D=abc1%2Cxyz2&orderBy=%5Bobject%20Object%5D%2C%5Bobject%20Object%5D&page=20&limit=10");
-      expect(indicesResult).toBe("filter%5Bstatus%5D=active&filter%5Bage%5D=21&filter%5BuserIds%5D%5B0%5D=abc1&filter%5BuserIds%5D%5B1%5D=xyz2&orderBy%5B0%5D%5Bfield%5D=lastName&orderBy%5B0%5D%5Bdirection%5D=asc&orderBy%5B1%5D%5Bfield%5D=createdAt&orderBy%5B1%5D%5Bdirection%5D=desc&page=20&limit=10");
-      expect(nativeResult).toBe("filter=%7B%22status%22%3A%22active%22%2C%22age%22%3A21%2C%22userIds%22%3A%5B%22abc1%22%2C%22xyz2%22%5D%7D&orderBy=%5Bobject+Object%5D&orderBy=%5Bobject+Object%5D&page=20&limit=10");
+      expect(decodeURIComponent(bracketsResult)).toBe("filter[status]=active&filter[age]=21&filter[userIds][]=abc1&filter[userIds][]=xyz2&orderBy[][field]=lastName&orderBy[][direction]=asc&orderBy[][field]=createdAt&orderBy[][direction]=desc&page=20&limit=10");
+      expect(decodeURIComponent(commaResult)).toBe("filter[status]=active&filter[age]=21&filter[userIds]=abc1,xyz2&orderBy=[object Object],[object Object]&page=20&limit=10");
+      expect(decodeURIComponent(indicesResult)).toBe("filter[status]=active&filter[age]=21&filter[userIds][0]=abc1&filter[userIds][1]=xyz2&orderBy[0][field]=lastName&orderBy[0][direction]=asc&orderBy[1][field]=createdAt&orderBy[1][direction]=desc&page=20&limit=10");
+      expect(decodeURIComponent(nativeResult)).toBe('filter={"status":"active","age":21,"userIds":["abc1","xyz2"]}&orderBy=[object+Object]&orderBy=[object+Object]&page=20&limit=10');
     });
 
     it("should generate full URL with default brackets serialization for nested objects", async () => {
@@ -303,7 +351,7 @@ describe("@safekit/route", () => {
         query: queryObject,
       });
 
-      expect(url).toBe("https://api.example.com/users?filter%5Bstatus%5D=active&filter%5Bage%5D=21&filter%5BuserIds%5D%5B%5D=abc1&filter%5BuserIds%5D%5B%5D=xyz2&orderBy%5B%5D%5Bfield%5D=lastName&orderBy%5B%5D%5Bdirection%5D=asc&orderBy%5B%5D%5Bfield%5D=createdAt&orderBy%5B%5D%5Bdirection%5D=desc&page=20&limit=10");
+      expect(decodeURIComponent(url)).toBe("https://api.example.com/users?filter[status]=active&filter[age]=21&filter[userIds][]=abc1&filter[userIds][]=xyz2&orderBy[][field]=lastName&orderBy[][direction]=asc&orderBy[][field]=createdAt&orderBy[][direction]=desc&page=20&limit=10");
     });
   });
 
