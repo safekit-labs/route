@@ -4,7 +4,6 @@
 
 import { StandardSchemaV1Error } from "./libs/standard-schema-v1/error";
 
-import type { StandardSchemaV1 } from "./libs/standard-schema-v1/spec";
 import type { SchemaValidator } from "./types";
 
 // ========================================================================
