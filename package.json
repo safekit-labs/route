@@ -1,6 +1,6 @@
 {
   "name": "@safekit/route",
-  "version": "0.0.1-alpha.1",
+  "version": "0.0.1",
   "author": "safekit",
   "repository": {
     "type": "git",
@@ -64,6 +64,7 @@
     "effect": "^3.17.1",
     "eslint": "^9.29.0",
     "eslint-config-prettier": "^10.1.5",
+    "globals": "^16.3.0",
     "jiti": "^2.4.2",
     "next-safe-action": "^8.0.7",
     "prettier": "^3.6.2",
