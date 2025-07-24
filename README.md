@@ -81,32 +81,7 @@ interface RouteDefinition {
 }
 ```
 
-## ⚠️ Important: Schema Registration Required
-
-**To use `params` or `query` in any route method, you MUST register schemas for them during route registration.** This ensures type safety and runtime validation.
-
-```typescript
-// ❌ This will NOT work - no schema registered for params/query
-const router = createRouter().register([{ path: "/users/:id" }]);
-
-await router.path({
-  path: "/users/:id",
-  params: { id: "123" }, // ❌ TypeScript error: params not allowed
-});
-
-// ✅ This WILL work - schema registered for params
-const router = createRouter().register([
-  {
-    path: "/users/:id",
-    params: z.object({ id: z.string() }), // ✅ Schema registered
-  },
-]);
-
-await router.path({
-  path: "/users/:id",
-  params: { id: "123" }, // ✅ Now params are allowed and validated
-});
-```
+**Note:** To use `params` or `query` parameters, you must register validation schemas during route registration for type safety.
 
 ### Methods
 
