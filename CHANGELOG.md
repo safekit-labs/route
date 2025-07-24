@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2025-01-24
+
+### Changed
+- **BREAKING:** Renamed `serializeQuery` option to `querySerializer` in `createRouter()` for better clarity
+- **BREAKING:** All router methods (`path()`, `href()`, `URL()`) are now synchronous and no longer return Promises
+- **BREAKING:** Removed async validation support - all validation is now synchronous for better performance
+
+### Improved
+- Updated all examples, tests, and documentation to use `as const` with route registration for better type safety
+- Improved TypeScript type inference for route paths and parameters
+- Better error handling with synchronous validation
+- Enhanced documentation with more comprehensive examples
+- Added social authentication callback route examples in README
+
+### Fixed
+- Simplified validation logic by removing unnecessary async overhead
+- More intuitive API naming conventions
+
 ## [0.0.1] - 2024-01-24
 
 ### Added

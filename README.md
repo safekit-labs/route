@@ -24,36 +24,134 @@ bun add @safekit/route
 
 ## Quick Start
 
-```typescript
+Commonly used to have a registry of your frontend routes for navigating to different pages via links or buttons
+
+```ts
+import { z } from "zod";
 import { createRouter } from "@safekit/route";
 
 // Create a router
 const router = createRouter({
-  baseUrl: "https://api.example.com",
+  baseUrl: "http://localhost:3000",
 });
 
 // Register routes
-const routes = router.register([
-  { path: "/home" },
-  { path: "/users/:userId/profile" },
-  { path: "/search" },
-]);
+const appRoutes = router.register([
+  { path: "/login" },
+  { path: "/register", query: { email: z.string().email() } },
+  { path: "/users/:userId/profile", params: { userId: z.string() } },
+] as const);
 
 // Generate paths and URLs
-const homePath = await routes.path({ path: "/home" });
-// Result: "/home"
+const homePath = appRoutes.path({ path: "/login" });
+// Result: "/login"
 
-const userPath = await routes.path({
+const userPath = appRoutes.path({
   path: "/users/:userId/profile",
   params: { userId: "123" },
 });
 // Result: "/users/123/profile"
 
-const searchUrl = await routes.href({
-  path: "/search",
-  query: { q: "typescript", page: 1 },
+const searchUrl = appRoutes.href({
+  path: "/register",
+  query: { email: "john.smith@gmail.com" },
 });
-// Result: "https://api.example.com/search?q=typescript&page=1"
+// Result: "http://localhost:3000/register?email=john.smith%40gmail.com"
+```
+
+You can also use it to have a registry of your backend urls
+
+```ts
+// Create a router
+const router = createRouter({
+  baseUrl: "https://app.example.com/api",
+});
+
+// Register routes
+const apiRoutes = router.register([
+  {
+    path: "/auth/social/callback/:provider",
+    params: z.object({
+      provider: z.enum(["google", "github"]),
+    }),
+    query: z.object({
+      code: z.string(),
+      state: z.string().optional(),
+      error: z.string().optional(),
+      error_description: z.string().optional(),
+    }),
+  },
+] as const);
+
+// Generate callback URLs
+const googleCallback = apiRoutes.href({
+  path: "/auth/social/callback/:provider",
+  params: { provider: "google" },
+  query: { code: "auth_code_123", state: "random_state_token" },
+});
+// Result: "https://app.example.com/api/auth/social/callback/google?code=auth_code_123&state=random_state_token"
+```
+
+## Type-Safe API
+
+`@safekit/route` leverages TypeScript to provide a fully type-safe experience from registration to usage.
+
+### Path Type Inference
+
+By using `as const` on your route definitions, the router can infer a union type of all valid path strings. This type can be extracted using `typeof router.Paths`.
+
+```ts
+const appRoutes = router.register([
+  { path: "/home" },
+  { path: "/users/:userId" },
+] as const); // 'as const' is essential!
+
+// Extract the type
+export type AppPath = typeof appRoutes.Paths;
+// AppPath is now "/home" | "/users/:userId"
+
+// Use it for type-safe functions
+function navigate(path: AppPath) { /* ... */ }
+
+navigate("/home"); // ✅ OK
+
+// ❌ TypeScript Error! The literal string "/users/123" is not assignable
+// to the type '"/home" | "/users/:userId"'.
+navigate("/users/123");
+
+// ✅ The correct way is to build the path, which is also type-safe:
+const userPath = appRoutes.path({ path: "/users/:userId", params: { userId: "123" } });
+// navigate(userPath) would work if the function accepted a string
+```
+
+### Parameter and Query Inference
+
+When you use `.path()`, `.URL()`, or `.href()`, the types for `params` and `query` are automatically inferred based on the `path` you provide and the schemas you registered.
+
+```ts
+const routes = router.register([
+  { path: "/users/:userId", params: z.object({ userId: z.string() }) },
+  { path: "/search", query: z.object({ q: z.string() }) },
+] as const);
+
+// TypeScript knows 'params' is required and must have 'userId: string'
+routes.path({
+  path: "/users/:userId",
+  params: { userId: "abc" },
+});
+
+// TypeScript knows 'query' is required and must have 'q: string'
+routes.href({
+  path: "/search",
+  query: { q: "hello" },
+});
+
+// TypeScript will throw an error if you use the wrong params
+routes.path({
+  path: "/search",
+  // @ts-expect-error: 'params' is not applicable to '/search'
+  params: { id: 123 },
+});
 ```
 
 ## API Reference
@@ -65,7 +163,7 @@ Creates a new router instance.
 **Options:**
 
 - `baseUrl?: string` - Default base URL for absolute URLs
-- `serializeQuery?: QuerySerializer` - Custom query string serializer
+- `querySerializer?: QuerySerializer` - Custom query string serializer
 
 ### router.register(definitions)
 
@@ -76,8 +174,9 @@ Registers route definitions with the router.
 ```typescript
 interface RouteDefinition {
   path: string; // URL pattern with :param syntax
-  params?: SchemaValidator; // Validation schema for path parameters
-  query?: SchemaValidator; // Validation schema for query parameters
+  // A Zod, Yup, Valibot, or other standard-schema compatible object
+  params?: AnySchemaObject;
+  query?: AnySchemaObject;
 }
 ```
 
@@ -97,9 +196,9 @@ const router = createRouter().register([
     params: z.object({ id: z.string() }),
     query: z.object({ tab: z.string() }),
   },
-]);
+] as const);
 
-const path = await router.path({
+const path = router.path({
   path: "/users/:id",
   params: { id: "123" },
   query: { tab: "settings" },
@@ -118,13 +217,21 @@ const router = createRouter().register([
     path: "/search",
     query: z.object({ q: z.string() }),
   },
-]);
+] as const);
 
-const url = await router.URL({
+const url = router.URL({
   path: "/search",
   query: { q: "test" },
 });
-// Result: URL object where url.href === "https://api.example.com/search?q=test"
+//  Result: URL object where
+//  url.href === "https://api.example.com/search?q=test"
+//  origin: 'https://api.example.com',
+//  protocol: 'https:',
+//  host: 'api.example.com',
+//  hostname: 'api.example.com',
+//  pathname: '/search',
+//  search: '?q=test',
+//  searchParams: URLSearchParams { 'q' => 'test' },
 ```
 
 #### router.href(options)
@@ -132,7 +239,7 @@ const url = await router.URL({
 Returns an absolute URL string.
 
 ```typescript
-const href = await router.href({
+const href = router.href({
   path: "/search",
   query: { q: "test" },
   baseUrl: "https://staging.example.com", // Optional override
@@ -160,27 +267,7 @@ The package supports any validation library that follows the Standard Schema spe
 - Custom validators
 - Any Standard Schema compatible library
 
-### Custom Validation
-
-```typescript
-const customValidator = (input: any) => {
-  if (!input.token || input.token.length !== 32) {
-    throw new Error("Invalid token");
-  }
-  return input;
-};
-
-const router = createRouter().register([
-  {
-    path: "/auth/:token",
-    params: customValidator,
-  },
-]);
-```
-
-
-
-### Nested Objects and Complex Query Parameters
+## Nested Objects and Complex Query Parameters
 
 The default `qs` serialization handles deeply nested objects and arrays, making it perfect for complex API endpoints like paginated queries:
 
@@ -206,7 +293,7 @@ const router = createRouter().register([
       limit: z.number(),
     }),
   },
-]);
+] as const);
 
 // Example: Paginated endpoint with complex filtering
 const queryObject = {
@@ -223,7 +310,7 @@ const queryObject = {
   limit: 10,
 };
 
-const url = await router.href({
+const url = router.href({
   path: "/users",
   query: queryObject,
 });
@@ -249,15 +336,16 @@ Choose from multiple query string formats:
 ```typescript
 import { createRouter, querySerializers } from "@safekit/route";
 
-createRouter({ serializeQuery: querySerializers.brackets });
-createRouter({ serializeQuery: querySerializers.comma });
-createRouter({ serializeQuery: querySerializers.native });
-createRouter({ serializeQuery: querySerializers.indices });
+createRouter({ querySerializer: querySerializers.brackets });
+createRouter({ querySerializer: querySerializers.comma });
+createRouter({ querySerializer: querySerializers.native });
+createRouter({ querySerializer: querySerializers.indices });
 ```
 
 **Arrays:**
+
 ```ts
-const query = { tags: ["a", "b"] }
+const query = { tags: ["a", "b"] };
 // Brackets (default): tags[]=a&tags[]=b
 // Comma:              tags=a,b
 // Native:             tags=a&tags=b
@@ -265,11 +353,12 @@ const query = { tags: ["a", "b"] }
 ```
 
 **Objects:**
+
 ```ts
-const query = { filter: { status: "active", type: "user" } }
+const query = { filter: { status: "active", type: "user" } };
 // Brackets (default): filter[status]=active&filter[type]=user
 // Comma:              filter[status]=active&filter[type]=user
-// Native:             filter={"status":"active","type":"user"}
+// Native:             filter={"status":"active","type":"user"} (Not recommended for objects)
 // Indices:            filter[status]=active&filter[type]=user
 ```
 

@@ -1,10 +1,10 @@
-import type { RouteDefinition, QuerySerializer, InferParams, InferQuery, SchemaValidator, InferSchemaOutput, Prettify } from "./types";
+import type { RouteDefinition, QuerySerializer, SchemaValidator, InferSchemaOutput } from "./types";
 import { createParseFn } from "./parser";
 import qs from "qs";
 
 export interface RouterOptions {
   baseUrl?: string;
-  serializeQuery?: (query: Record<string, any>) => string;
+  querySerializer?: (query: Record<string, any>) => string;
 }
 
 type ExtractRouteByPath<TDefs extends RouteDefinition, TPath> = Extract<TDefs, { path: TPath }>;
@@ -20,11 +20,14 @@ type BuildOptions<TRoute extends RouteDefinition> = {
     : Record<string, any>;
 };
 
-type PathOptions<TDefs extends RouteDefinition, TPath extends TDefs["path"]> =
-  BuildOptions<ExtractRouteByPath<TDefs, TPath>>;
+type PathOptions<TDefs extends RouteDefinition, TPath extends TDefs["path"]> = BuildOptions<
+  ExtractRouteByPath<TDefs, TPath>
+>;
 
-type UrlOptions<TDefs extends RouteDefinition, TPath extends TDefs["path"]> =
-  PathOptions<TDefs, TPath> & { baseUrl?: string; };
+type UrlOptions<TDefs extends RouteDefinition, TPath extends TDefs["path"]> = PathOptions<
+  TDefs,
+  TPath
+> & { baseUrl?: string };
 
 export class Router<TDefs extends RouteDefinition = never> {
   private definitions = new Map<string, RouteDefinition>();
@@ -33,13 +36,12 @@ export class Router<TDefs extends RouteDefinition = never> {
 
   constructor(options: RouterOptions = {}) {
     this.defaultBaseUrl = options.baseUrl;
-    this.querySerializer = options.serializeQuery || ((query) => qs.stringify(query, { arrayFormat: 'brackets' }));
+    this.querySerializer =
+      options.querySerializer || ((query) => qs.stringify(query, { arrayFormat: "brackets" }));
   }
 
-  register<T extends RouteDefinition>(
-    definitions: T[]
-  ): Router<TDefs | T> {
-    definitions.forEach(def => {
+  register<T extends RouteDefinition>(definitions: T[]): Router<TDefs | T> {
+    definitions.forEach((def) => {
       if (this.definitions.has(def.path)) {
         console.warn(`Route pattern "${def.path}" is being re-registered.`);
       }
@@ -52,12 +54,10 @@ export class Router<TDefs extends RouteDefinition = never> {
   private extractParamNames(path: string): string[] {
     const paramRegex = /:([a-zA-Z0-9_]+)/g;
     const matches = path.matchAll(paramRegex);
-    return Array.from(matches, match => match[1]!);
+    return Array.from(matches, (match) => match[1]!);
   }
 
-  private async validateInputs<TPath extends TDefs["path"]>(
-    options: PathOptions<TDefs, TPath>
-  ) {
+  private validateInputs<TPath extends TDefs["path"]>(options: PathOptions<TDefs, TPath>) {
     const definition = this.definitions.get(options.path as string);
     if (!definition) {
       throw new Error(`Route pattern "${String(options.path)}" has not been registered`);
@@ -70,7 +70,7 @@ export class Router<TDefs extends RouteDefinition = never> {
     for (const paramName of paramNames) {
       if (!(paramName in (params as Record<string, any>))) {
         throw new Error(
-          `Missing required path parameter "${paramName}" for route "${String(options.path)}"`
+          `Missing required path parameter "${paramName}" for route "${String(options.path)}"`,
         );
       }
     }
@@ -78,28 +78,28 @@ export class Router<TDefs extends RouteDefinition = never> {
     let validatedParams = params;
     if (definition.params) {
       const parseFn = createParseFn(definition.params);
-      const result = await parseFn(params);
+      const result = parseFn(params);
       validatedParams = result as typeof params;
     }
 
     let validatedQuery = query;
     if (definition.query) {
       const parseFn = createParseFn(definition.query);
-      const result = await parseFn(query);
+      const result = parseFn(query);
       validatedQuery = result as typeof query;
     }
 
     return {
       definition,
       params: validatedParams,
-      query: validatedQuery
+      query: validatedQuery,
     };
   }
 
   private buildPathAndQuery(
     definition: RouteDefinition,
     params: Record<string, any>,
-    query: Record<string, any>
+    query: Record<string, any>,
   ): string {
     let pathString = definition.path;
     const paramNames = this.extractParamNames(pathString);
@@ -110,7 +110,7 @@ export class Router<TDefs extends RouteDefinition = never> {
       }
       pathString = pathString.replace(
         `:${paramName}`,
-        encodeURIComponent(String(params[paramName]))
+        encodeURIComponent(String(params[paramName])),
       );
     }
 
@@ -119,33 +119,25 @@ export class Router<TDefs extends RouteDefinition = never> {
     return queryString ? `${finalPath}?${queryString}` : finalPath;
   }
 
-  async path<TPath extends TDefs["path"]>(
-    options: PathOptions<TDefs, TPath>
-  ): Promise<string> {
-    const { definition, params, query } = await this.validateInputs(options);
+  path<TPath extends TDefs["path"]>(options: PathOptions<TDefs, TPath>): string {
+    const { definition, params, query } = this.validateInputs(options);
     return this.buildPathAndQuery(definition, params, query);
   }
 
-  async URL<TPath extends TDefs["path"]>(
-    options: UrlOptions<TDefs, TPath>
-  ): Promise<URL> {
-    const { definition, params, query } = await this.validateInputs(options);
+  URL<TPath extends TDefs["path"]>(options: UrlOptions<TDefs, TPath>): URL {
+    const { definition, params, query } = this.validateInputs(options);
     const relativePath = this.buildPathAndQuery(definition, params, query);
 
     const effectiveBaseUrl = options.baseUrl ?? this.defaultBaseUrl;
     if (!effectiveBaseUrl) {
-      throw new Error(
-        "Cannot build absolute URL: No baseUrl provided in options or constructor."
-      );
+      throw new Error("Cannot build absolute URL: No baseUrl provided in options or constructor.");
     }
 
     return new URL(relativePath, effectiveBaseUrl);
   }
 
-  async href<TPath extends TDefs["path"]>(
-    options: UrlOptions<TDefs, TPath>
-  ): Promise<string> {
-    const url = await this.URL(options);
+  href<TPath extends TDefs["path"]>(options: UrlOptions<TDefs, TPath>): string {
+    const url = this.URL(options);
     return url.href;
   }
 

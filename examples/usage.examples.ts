@@ -14,15 +14,15 @@ const basicRouter = router.register([
   { path: "/home" },
   { path: "/about" },
   { path: "/contact" }
-]);
+] as const);
 
-async function basicExamples() {
+function basicExamples() {
   console.log("=== BASIC USAGE ===");
   
-  const homePath = await basicRouter.path({ path: "/home" });
+  const homePath = basicRouter.path({ path: "/home" });
   console.log("Home path:", homePath);
 
-  const aboutUrl = await basicRouter.href({ path: "/about" });
+  const aboutUrl = basicRouter.href({ path: "/about" });
   console.log("About URL:", aboutUrl);
 
   const allPaths = basicRouter.paths();
@@ -60,14 +60,14 @@ const validationRouter = createRouter({
       sort: z.string()
     })
   }
-]);
+] as const);
 
-async function validationExamples() {
+function validationExamples() {
   console.log("\n=== PARAMS AND QUERY WITH VALIDATION ===");
   
   // Example 1: Using params (schema required)
   try {
-    const userPath = await validationRouter.path({
+    const userPath = validationRouter.path({
       path: "/users/:userId/profile",
       params: { userId: "user123" }
     });
@@ -78,7 +78,7 @@ async function validationExamples() {
 
   // Example 2: Using query (schema required)
   try {
-    const searchUrl = await validationRouter.href({
+    const searchUrl = validationRouter.href({
       path: "/search",
       query: { page: 2 }
     });
@@ -89,7 +89,7 @@ async function validationExamples() {
 
   // Example 3: Using both params and query (both schemas required)
   try {
-    const postUrl = await validationRouter.href({
+    const postUrl = validationRouter.href({
       path: "/posts/:postId",
       params: { postId: "post123" },
       query: { tab: "comments", sort: "newest" }
@@ -101,7 +101,7 @@ async function validationExamples() {
 
   // Example 4: Validation error
   try {
-    await validationRouter.path({
+    validationRouter.path({
       path: "/users/:userId/profile",
       params: { userId: "ab" } // Too short, will fail validation
     });
@@ -130,32 +130,32 @@ const data = {
   page: 1
 };
 
-async function serializerExamples() {
+function serializerExamples() {
   console.log("\n=== QUERY SERIALIZERS ===");
   
   const bracketRouter = createRouter({
     baseUrl: "https://api.example.com",
-    serializeQuery: querySerializers.brackets
-  }).register([{ path: "/search", query: searchQuerySchema }]);
+    querySerializer: querySerializers.brackets
+  }).register([{ path: "/search", query: searchQuerySchema }] as const);
 
   const commaRouter = createRouter({
     baseUrl: "https://api.example.com", 
-    serializeQuery: querySerializers.comma
-  }).register([{ path: "/search", query: searchQuerySchema }]);
+    querySerializer: querySerializers.comma
+  }).register([{ path: "/search", query: searchQuerySchema }] as const);
 
   const nativeRouter = createRouter({
     baseUrl: "https://api.example.com",
-    serializeQuery: querySerializers.native
-  }).register([{ path: "/search", query: searchQuerySchema }]);
+    querySerializer: querySerializers.native
+  }).register([{ path: "/search", query: searchQuerySchema }] as const);
 
   console.log("Bracket style:");
-  console.log(await bracketRouter.href({ path: "/search", query: data }));
+  console.log(bracketRouter.href({ path: "/search", query: data }));
 
   console.log("\nComma style:");
-  console.log(await commaRouter.href({ path: "/search", query: data }));
+  console.log(commaRouter.href({ path: "/search", query: data }));
 
   console.log("\nNative style:");
-  console.log(await nativeRouter.href({ path: "/search", query: data }));
+  console.log(nativeRouter.href({ path: "/search", query: data }));
 
   console.log("\nDirect serializer usage:");
   console.log("Brackets:", querySerializers.brackets(data));
@@ -184,13 +184,13 @@ const customRouter = createRouter().register([
     path: "/auth/:token",
     params: customTokenSchema // Custom schema (not Zod)
   }
-]);
+] as const);
 
-async function customValidationExamples() {
+function customValidationExamples() {
   console.log("\n=== CUSTOM VALIDATION ===");
   
   try {
-    const validPath = await customRouter.path({
+    const validPath = customRouter.path({
       path: "/auth/:token",
       params: { token: "a".repeat(32) }
     });
@@ -200,7 +200,7 @@ async function customValidationExamples() {
   }
 
   try {
-    await customRouter.path({
+    customRouter.path({
       path: "/auth/:token",
       params: { token: "short" }
     });
@@ -213,11 +213,11 @@ async function customValidationExamples() {
 // RUN ALL EXAMPLES
 // ========================================================================
 
-async function runAllExamples() {
-  await basicExamples();
-  await validationExamples();
-  await serializerExamples();
-  await customValidationExamples();
+function runAllExamples() {
+  basicExamples();
+  validationExamples();
+  serializerExamples();
+  customValidationExamples();
 }
 
-runAllExamples().catch(console.error);
+runAllExamples();

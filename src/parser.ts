@@ -11,7 +11,7 @@ import type { SchemaValidator } from "./types";
 // PARSE FUNCTION TYPE
 // ========================================================================
 
-export type ParseFn<TType> = (value: unknown) => Promise<TType> | TType;
+export type ParseFn<TType> = (value: unknown) => TType;
 
 // ========================================================================
 // MAIN VALIDATOR FUNCTION
@@ -40,11 +40,6 @@ export function createParseFn<T>(schema: SchemaValidator<T>): ParseFn<T> {
     return parser;
   }
 
-  // Zod async parsing
-  if (typeof parser.parseAsync === "function") {
-    return parser.parseAsync.bind(parser);
-  }
-
   // Zod/Valibot sync parsing
   if (typeof parser.parse === "function") {
     return parser.parse.bind(parser);
@@ -70,8 +65,8 @@ export function createParseFn<T>(schema: SchemaValidator<T>): ParseFn<T> {
 
   // Standard Schema - only case where we need to create our own error
   if (isStandardSchema) {
-    return async (value: unknown) => {
-      const result = await parser["~standard"].validate(value);
+    return (value: unknown) => {
+      const result = parser["~standard"].validate(value);
       if (result.issues) {
         throw new StandardSchemaV1Error(result.issues);
       }

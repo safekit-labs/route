@@ -27,12 +27,12 @@ describe("@safekit/route", () => {
 
     it("should create router with custom query serializer", () => {
       const customSerializer = vi.fn().mockReturnValue("custom=query");
-      const router = createRouter({ serializeQuery: customSerializer });
+      const router = createRouter({ querySerializer: customSerializer });
       expect(router).toBeDefined();
     });
 
     it("should create router with named query serializer", () => {
-      const router = createRouter({ serializeQuery: querySerializers.comma });
+      const router = createRouter({ querySerializer: querySerializers.comma });
       expect(router).toBeDefined();
     });
   });
@@ -40,15 +40,15 @@ describe("@safekit/route", () => {
   describe("register", () => {
     it("should register routes", () => {
       const router = createRouter();
-      const registeredRouter = router.register([{ path: "/home" }, { path: "/users/:id" }]);
+      const registeredRouter = router.register([{ path: "/home" }, { path: "/users/:id" }] as const);
 
       expect(registeredRouter.paths()).toEqual(["/home", "/users/:id"]);
     });
 
     it("should warn on duplicate route registration", () => {
       const router = createRouter();
-      router.register([{ path: "/home" }]);
-      router.register([{ path: "/home" }]);
+      router.register([{ path: "/home" }] as const);
+      router.register([{ path: "/home" }] as const);
 
       expect(consoleSpy).toHaveBeenCalledWith('Route pattern "/home" is being re-registered.');
     });
@@ -70,37 +70,37 @@ describe("@safekit/route", () => {
           page: z.number(),
         }),
       },
-    ]);
+    ] as const);
 
-    it("should generate simple paths", async () => {
-      const path = await router.path({ path: "/home" });
+    it("should generate simple paths", () => {
+      const path = router.path({ path: "/home" });
       expect(path).toBe("/home");
     });
 
-    it("should generate paths with parameters", async () => {
-      const path = await router.path({
+    it("should generate paths with parameters", () => {
+      const path = router.path({
         path: "/users/:userId/profile",
         params: { userId: "123" },
       });
       expect(path).toBe("/users/123/profile");
     });
 
-    it("should generate paths with query parameters", async () => {
-      const path = await router.path({
+    it("should generate paths with query parameters", () => {
+      const path = router.path({
         path: "/search",
         query: { q: "test", page: 1 },
       });
       expect(path).toBe("/search?q=test&page=1");
     });
 
-    it("should throw error for missing required parameters", async () => {
-      await expect(router.path({ path: "/users/:userId/profile" })).rejects.toThrow(
+    it("should throw error for missing required parameters", () => {
+      expect(() => router.path({ path: "/users/:userId/profile" })).toThrow(
         'Missing required path parameter "userId"',
       );
     });
 
-    it("should throw error for unregistered route", async () => {
-      await expect(router.path({ path: "/not-found" as any })).rejects.toThrow(
+    it("should throw error for unregistered route", () => {
+      expect(() => router.path({ path: "/not-found" as any })).toThrow(
         'Route pattern "/not-found" has not been registered',
       );
     });
@@ -114,18 +114,18 @@ describe("@safekit/route", () => {
           q: z.string(),
         }),
       },
-    ]);
+    ] as const);
 
-    it("should generate URL with default baseUrl", async () => {
-      const url = await router.URL({
+    it("should generate URL with default baseUrl", () => {
+      const url = router.URL({
         path: "/search",
         query: { q: "test" },
       });
       expect(url.href).toBe("https://api.example.com/search?q=test");
     });
 
-    it("should generate URL with override baseUrl", async () => {
-      const url = await router.URL({
+    it("should generate URL with override baseUrl", () => {
+      const url = router.URL({
         path: "/search",
         baseUrl: "https://staging.example.com",
         query: { q: "test" },
@@ -133,9 +133,9 @@ describe("@safekit/route", () => {
       expect(url.href).toBe("https://staging.example.com/search?q=test");
     });
 
-    it("should throw error when no baseUrl available", async () => {
-      const routerWithoutBase = createRouter().register([{ path: "/test" }]);
-      await expect(routerWithoutBase.URL({ path: "/test" })).rejects.toThrow(
+    it("should throw error when no baseUrl available", () => {
+      const routerWithoutBase = createRouter().register([{ path: "/test" }] as const);
+      expect(() => routerWithoutBase.URL({ path: "/test" })).toThrow(
         "Cannot build absolute URL: No baseUrl provided",
       );
     });
@@ -149,10 +149,10 @@ describe("@safekit/route", () => {
           q: z.string(),
         }),
       },
-    ]);
+    ] as const);
 
-    it("should generate href string", async () => {
-      const href = await router.href({
+    it("should generate href string", () => {
+      const href = router.href({
         path: "/search",
         query: { q: "test" },
       });
@@ -175,40 +175,40 @@ describe("@safekit/route", () => {
           page: z.coerce.number().min(1),
         }),
       },
-    ]);
+    ] as const);
 
-    it("should validate params successfully", async () => {
-      const path = await router.path({
+    it("should validate params successfully", () => {
+      const path = router.path({
         path: "/users/:userId",
         params: { userId: "user123" },
       });
       expect(path).toBe("/users/user123");
     });
 
-    it("should validate query successfully", async () => {
-      const path = await router.path({
+    it("should validate query successfully", () => {
+      const path = router.path({
         path: "/search",
         query: { q: "test", page: "2" },
       });
       expect(path).toBe("/search?q=test&page=2");
     });
 
-    it("should throw validation error for invalid params", async () => {
-      await expect(
+    it("should throw validation error for invalid params", () => {
+      expect(() =>
         router.path({
           path: "/users/:userId",
           params: { userId: "ab" },
         }),
-      ).rejects.toThrow();
+      ).toThrow();
     });
 
-    it("should throw validation error for invalid query", async () => {
-      await expect(
+    it("should throw validation error for invalid query", () => {
+      expect(() =>
         router.path({
           path: "/search",
           query: { page: "invalid" },
         }),
-      ).rejects.toThrow();
+      ).toThrow();
     });
   });
 
@@ -312,7 +312,7 @@ describe("@safekit/route", () => {
       expect(decodeURIComponent(nativeResult)).toBe('filter={"status":"active","age":21,"userIds":["abc1","xyz2"]}&orderBy=[object+Object]&orderBy=[object+Object]&page=20&limit=10');
     });
 
-    it("should generate full URL with default brackets serialization for nested objects", async () => {
+    it("should generate full URL with default brackets serialization for nested objects", () => {
       const router = createRouter({ baseUrl: "https://api.example.com" }).register([
         {
           path: "/users",
@@ -330,7 +330,7 @@ describe("@safekit/route", () => {
             limit: z.number(),
           }),
         },
-      ]);
+      ] as const);
 
       const queryObject = {
         filter: {
@@ -346,7 +346,7 @@ describe("@safekit/route", () => {
         limit: 10,
       };
 
-      const url = await router.href({
+      const url = router.href({
         path: "/users",
         query: queryObject,
       });
@@ -356,7 +356,7 @@ describe("@safekit/route", () => {
   });
 
   describe("Paths type helper", () => {
-    const router = createRouter().register([{ path: "/home" }, { path: "/users/:id" }]);
+    const router = createRouter().register([{ path: "/home" }, { path: "/users/:id" }] as const);
 
     it("should throw error when accessing Paths property", () => {
       expect(() => router.Paths).toThrow("Paths property is only for type extraction");

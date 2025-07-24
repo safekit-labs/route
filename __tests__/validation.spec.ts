@@ -11,7 +11,7 @@ import * as T from "runtypes";
 
 describe("Validation Library Support", () => {
   describe("Zod v3 schemas", () => {
-    it("should validate params with Zod v3 schema", async () => {
+    it("should validate params with Zod v3 schema", () => {
       const router = createRouter().register([
         {
           path: "/users/:id",
@@ -19,25 +19,25 @@ describe("Validation Library Support", () => {
             id: zod3.string().uuid(),
           }),
         },
-      ]);
+      ] as const);
 
       // Valid UUID should work
-      const path = await router.path({
+      const path = router.path({
         path: "/users/:id",
         params: { id: "123e4567-e89b-12d3-a456-426614174000" },
       });
       expect(path).toBe("/users/123e4567-e89b-12d3-a456-426614174000");
 
       // Invalid UUID should throw
-      await expect(
+      expect(() =>
         router.path({
           path: "/users/:id",
           params: { id: "invalid-uuid" },
         }),
-      ).rejects.toThrow();
+      ).toThrow();
     });
 
-    it("should validate query with Zod v3 schema", async () => {
+    it("should validate query with Zod v3 schema", () => {
       const router = createRouter().register([
         {
           path: "/search",
@@ -47,10 +47,10 @@ describe("Validation Library Support", () => {
             limit: zod3.number().int().min(1).max(100).optional(),
           }),
         },
-      ]);
+      ] as const);
 
       // Valid query should work
-      const path = await router.path({
+      const path = router.path({
         path: "/search",
         query: { q: "test", page: 2, limit: 10 },
       });
@@ -60,17 +60,17 @@ describe("Validation Library Support", () => {
       expect(path).toMatch(/limit=10/);
 
       // Invalid page should throw
-      await expect(
+      expect(() =>
         router.path({
           path: "/search",
           query: { page: 0 },
         }),
-      ).rejects.toThrow();
+      ).toThrow();
     });
   });
 
   describe("Zod v4 schemas", () => {
-    it("should validate params with Zod v4 schema", async () => {
+    it("should validate params with Zod v4 schema", () => {
       const router = createRouter().register([
         {
           path: "/posts/:postId/comments",
@@ -82,10 +82,10 @@ describe("Validation Library Support", () => {
             page: zod4.number().int().positive().optional(),
           }),
         },
-      ]);
+      ] as const);
 
       // Valid params and query
-      const path = await router.path({
+      const path = router.path({
         path: "/posts/:postId/comments",
         params: { postId: "post_abc123" },
         query: { sort: "newest", page: 1 },
@@ -95,16 +95,16 @@ describe("Validation Library Support", () => {
       expect(path).toMatch(/page=1/);
 
       // Invalid postId format
-      await expect(
+      expect(() =>
         router.path({
           path: "/posts/:postId/comments",
           params: { postId: "invalid-format" },
           query: { sort: "newest" },
         }),
-      ).rejects.toThrow();
+      ).toThrow();
     });
 
-    it("should coerce query parameters with Zod v4", async () => {
+    it("should coerce query parameters with Zod v4", () => {
       const router = createRouter().register([
         {
           path: "/api/data",
@@ -114,9 +114,9 @@ describe("Validation Library Support", () => {
             tags: zod4.array(zod4.string()).optional(),
           }),
         },
-      ]);
+      ] as const);
 
-      const path = await router.path({
+      const path = router.path({
         path: "/api/data",
         // @ts-expect-error - testing coercion from string values
         query: { count: "5", enabled: "true", tags: ["a", "b"] },
@@ -127,7 +127,7 @@ describe("Validation Library Support", () => {
   });
 
   describe("Yup schemas", () => {
-    it("should validate params with Yup schema", async () => {
+    it("should validate params with Yup schema", () => {
       const router = createRouter().register([
         {
           path: "/profiles/:userId",
@@ -135,23 +135,23 @@ describe("Validation Library Support", () => {
             userId: yup.string().min(5).required(),
           }),
         },
-      ]);
+      ] as const);
 
-      const path = await router.path({
+      const path = router.path({
         path: "/profiles/:userId",
         params: { userId: "user12345" },
       });
       expect(path).toBe("/profiles/user12345");
 
-      await expect(
+      expect(() =>
         router.path({
           path: "/profiles/:userId",
           params: { userId: "usr" },
         }),
-      ).rejects.toThrow();
+      ).toThrow();
     });
 
-    it("should validate query with Yup schema", async () => {
+    it("should validate query with Yup schema", () => {
       const router = createRouter().register([
         {
           path: "/api/users",
@@ -160,25 +160,25 @@ describe("Validation Library Support", () => {
             limit: yup.number().min(1).max(100).required(),
           }),
         },
-      ]);
+      ] as const);
 
-      const path = await router.path({
+      const path = router.path({
         path: "/api/users",
         query: { search: "john", limit: 50 },
       });
       expect(path).toMatch(/limit=50/);
 
-      await expect(
+      expect(() =>
         router.path({
           path: "/api/users",
           query: { limit: 200 },
         }),
-      ).rejects.toThrow();
+      ).toThrow();
     });
   });
 
   describe("Superstruct schemas", () => {
-    it("should validate params with Superstruct schema", async () => {
+    it("should validate params with Superstruct schema", () => {
       const router = createRouter().register([
         {
           path: "/products/:productId",
@@ -186,25 +186,25 @@ describe("Validation Library Support", () => {
             productId: st.pattern(st.string(), /^prod_\w+$/),
           }),
         },
-      ]);
+      ] as const);
 
-      const path = await router.path({
+      const path = router.path({
         path: "/products/:productId",
         params: { productId: "prod_123abc" },
       });
       expect(path).toBe("/products/prod_123abc");
 
-      await expect(
+      expect(() =>
         router.path({
           path: "/products/:productId",
           params: { productId: "invalid" },
         }),
-      ).rejects.toThrow();
+      ).toThrow();
     });
   });
 
   describe("Valibot schemas", () => {
-    it("should validate params with Valibot schema", async () => {
+    it("should validate params with Valibot schema", () => {
       const router = createRouter().register([
         {
           path: "/items/:itemId",
@@ -212,25 +212,25 @@ describe("Validation Library Support", () => {
             itemId: v.pipe(v.string(), v.minLength(3)),
           }),
         },
-      ]);
+      ] as const);
 
-      const path = await router.path({
+      const path = router.path({
         path: "/items/:itemId",
         params: { itemId: "item123" },
       });
       expect(path).toBe("/items/item123");
 
-      await expect(
+      expect(() =>
         router.path({
           path: "/items/:itemId",
           params: { itemId: "it" },
         }),
-      ).rejects.toThrow();
+      ).toThrow();
     });
   });
 
   describe("ArkType schemas", () => {
-    it("should validate params with ArkType schema", async () => {
+    it("should validate params with ArkType schema", () => {
       const router = createRouter().register([
         {
           path: "/users/:username",
@@ -238,23 +238,23 @@ describe("Validation Library Support", () => {
             username: "string>2",
           }),
         },
-      ]);
+      ] as const);
 
-      const path = await router.path({
+      const path = router.path({
         path: "/users/:username",
         params: { username: "johndoe" },
       });
       expect(path).toBe("/users/johndoe");
 
-      await expect(
+      expect(() =>
         router.path({
           path: "/users/:username",
           params: { username: "ab" },
         }),
-      ).rejects.toThrow();
+      ).toThrow();
     });
 
-    it("should validate query with ArkType schema", async () => {
+    it("should validate query with ArkType schema", () => {
       const router = createRouter().register([
         {
           path: "/search",
@@ -263,26 +263,26 @@ describe("Validation Library Support", () => {
             page: "number>=1",
           }),
         },
-      ]);
+      ] as const);
 
-      const path = await router.path({
+      const path = router.path({
         path: "/search",
         query: { q: "test", page: 2 },
       });
       expect(path).toMatch(/q=test/);
       expect(path).toMatch(/page=2/);
 
-      await expect(
+      expect(() =>
         router.path({
           path: "/search",
           query: { q: "test", page: 0 },
         }),
-      ).rejects.toThrow();
+      ).toThrow();
     });
   });
 
   describe("Effect Schema", () => {
-    it("should validate params with Effect Schema", async () => {
+    it("should validate params with Effect Schema", () => {
       const router = createRouter().register([
         {
           path: "/orders/:orderId",
@@ -292,16 +292,16 @@ describe("Validation Library Support", () => {
             }),
           ),
         },
-      ]);
+      ] as const);
 
-      const path = await router.path({
+      const path = router.path({
         path: "/orders/:orderId",
         params: { orderId: "order123" },
       });
       expect(path).toBe("/orders/order123");
     });
 
-    it("should validate query with Effect Schema", async () => {
+    it("should validate query with Effect Schema", () => {
       const router = createRouter().register([
         {
           path: "/api/data",
@@ -312,9 +312,9 @@ describe("Validation Library Support", () => {
             }),
           ),
         },
-      ]);
+      ] as const);
 
-      const path = await router.path({
+      const path = router.path({
         path: "/api/data",
         query: { type: "users", count: 10 },
       });
@@ -324,7 +324,7 @@ describe("Validation Library Support", () => {
   });
 
   describe("Runtypes schemas", () => {
-    it("should validate params with Runtypes schema", async () => {
+    it("should validate params with Runtypes schema", () => {
       const router = createRouter().register([
         {
           path: "/docs/:docId",
@@ -332,16 +332,16 @@ describe("Validation Library Support", () => {
             docId: T.String,
           }),
         },
-      ]);
+      ] as const);
 
-      const path = await router.path({
+      const path = router.path({
         path: "/docs/:docId",
         params: { docId: "doc123" },
       });
       expect(path).toBe("/docs/doc123");
     });
 
-    it("should validate query with Runtypes schema", async () => {
+    it("should validate query with Runtypes schema", () => {
       const router = createRouter().register([
         {
           path: "/documents",
@@ -350,9 +350,9 @@ describe("Validation Library Support", () => {
             archived: T.Boolean,
           }),
         },
-      ]);
+      ] as const);
 
-      const path = await router.path({
+      const path = router.path({
         path: "/documents",
         query: { search: "report", archived: false },
       });
@@ -362,7 +362,7 @@ describe("Validation Library Support", () => {
   });
 
   describe("Custom function validators", () => {
-    it("should validate params with custom function", async () => {
+    it("should validate params with custom function", () => {
       const customValidator = (input: any) => {
         if (!input.token || typeof input.token !== "string") {
           throw new Error("Token is required and must be a string");
@@ -378,24 +378,24 @@ describe("Validation Library Support", () => {
           path: "/auth/:token",
           params: customValidator,
         },
-      ]);
+      ] as const);
 
       const validToken = "a".repeat(32);
-      const path = await router.path({
+      const path = router.path({
         path: "/auth/:token",
         params: { token: validToken },
       });
       expect(path).toBe(`/auth/${validToken}`);
 
-      await expect(
+      expect(() =>
         router.path({
           path: "/auth/:token",
           params: { token: "short" },
         }),
-      ).rejects.toThrow("Token must be exactly 32 characters");
+      ).toThrow("Token must be exactly 32 characters");
     });
 
-    it("should validate query with custom function", async () => {
+    it("should validate query with custom function", () => {
       const customValidator = (input: any) => {
         const validated = { ...input };
         if (validated.version) {
@@ -413,25 +413,25 @@ describe("Validation Library Support", () => {
           path: "/api",
           query: customValidator,
         },
-      ]);
+      ] as const);
 
-      const path = await router.path({
+      const path = router.path({
         path: "/api",
         query: { action: "list", version: 3 },
       });
       expect(path).toMatch(/version=3/);
 
-      await expect(
+      expect(() =>
         router.path({
           path: "/api",
           query: { version: 15 },
         }),
-      ).rejects.toThrow("Version must be between 1 and 10");
+      ).toThrow("Version must be between 1 and 10");
     });
   });
 
   describe("Standard Schema v1 format", () => {
-    it("should validate params with Standard Schema", async () => {
+    it("should validate params with Standard Schema", () => {
       const standardSchema = {
         "~standard": {
           version: 1 as const,
@@ -453,23 +453,23 @@ describe("Validation Library Support", () => {
           path: "/users/:email",
           params: standardSchema,
         },
-      ]);
+      ] as const);
 
-      const path = await router.path({
+      const path = router.path({
         path: "/users/:email",
         params: { email: "test@example.com" },
       });
       expect(path).toBe("/users/test%40example.com");
 
-      await expect(
+      expect(() =>
         router.path({
           path: "/users/:email",
           params: { email: "invalid-email" },
         }),
-      ).rejects.toThrow("Invalid email format");
+      ).toThrow("Invalid email format");
     });
 
-    it("should validate query with Standard Schema", async () => {
+    it("should validate query with Standard Schema", () => {
       const standardSchema = {
         "~standard": {
           version: 1 as const,
@@ -495,48 +495,48 @@ describe("Validation Library Support", () => {
           path: "/items",
           query: standardSchema,
         },
-      ]);
+      ] as const);
 
-      const path = await router.path({
+      const path = router.path({
         path: "/items",
         query: { type: "book", count: 5 },
       });
       expect(path).toMatch(/count=5/);
 
-      await expect(
+      expect(() =>
         router.path({
           path: "/items",
           query: { count: -1 },
         }),
-      ).rejects.toThrow("Count must be a positive number");
+      ).toThrow("Count must be a positive number");
     });
   });
 
   describe("No validation", () => {
-    it("should pass through params without validation when no schema", async () => {
+    it("should pass through params without validation when no schema", () => {
       const router = createRouter().register([
         {
           path: "/public/:any",
           // No params schema
         },
-      ]);
+      ] as const);
 
-      const path = await router.path({
+      const path = router.path({
         path: "/public/:any",
         params: { any: "anything-goes-123!@#" },
       });
       expect(path).toBe("/public/anything-goes-123!%40%23");
     });
 
-    it("should pass through query without validation when no schema", async () => {
+    it("should pass through query without validation when no schema", () => {
       const router = createRouter().register([
         {
           path: "/open",
           // No query schema
         },
-      ]);
+      ] as const);
 
-      const path = await router.path({
+      const path = router.path({
         path: "/open",
         query: { whatever: "value", number: 123, special: "!@#$%" },
       });
@@ -547,30 +547,28 @@ describe("Validation Library Support", () => {
   });
 
   describe("Error cases", () => {
-    it("should require params when path has parameters", async () => {
+    it("should require params when path has parameters", () => {
       const router = createRouter().register([
         {
           path: "/users/:userId",
           // No params schema but path has :userId
         },
-      ]);
+      ] as const);
 
-      await expect(
+      expect(() =>
         router.path({
           path: "/users/:userId",
           // Missing params
         }),
-      ).rejects.toThrow('Missing required path parameter "userId"');
+      ).toThrow('Missing required path parameter "userId"');
     });
 
-    it("should validate async schemas", async () => {
-      const asyncSchema = {
+    it("should validate schemas with sync validation", () => {
+      const syncSchema = {
         "~standard": {
           version: 1 as const,
           vendor: "test",
-          validate: async (input: unknown) => {
-            // Simulate async validation
-            await new Promise((resolve) => setTimeout(resolve, 10));
+          validate: (input: unknown) => {
             const data = input as any;
             if (!data.id || data.id.length < 3) {
               return {
@@ -584,23 +582,23 @@ describe("Validation Library Support", () => {
 
       const router = createRouter().register([
         {
-          path: "/async/:id",
-          params: asyncSchema,
+          path: "/sync/:id",
+          params: syncSchema,
         },
-      ]);
+      ] as const);
 
-      const path = await router.path({
-        path: "/async/:id",
+      const path = router.path({
+        path: "/sync/:id",
         params: { id: "abc123" },
       });
-      expect(path).toBe("/async/abc123");
+      expect(path).toBe("/sync/abc123");
 
-      await expect(
+      expect(() =>
         router.path({
-          path: "/async/:id",
+          path: "/sync/:id",
           params: { id: "ab" },
         }),
-      ).rejects.toThrow("ID must be at least 3 characters");
+      ).toThrow("ID must be at least 3 characters");
     });
   });
 });
