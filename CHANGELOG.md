@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2025-01-24
+## [0.1.0] - 2025-07-24
 
 ### Changed
 - **BREAKING:** Renamed `serializeQuery` option to `querySerializer` in `createRouter()` for better clarity
@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Simplified validation logic by removing unnecessary async overhead
 - More intuitive API naming conventions
 
-## [0.0.1] - 2024-01-24
+## [0.0.1] - 2024-07-24
 
 ### Added
 - Initial release of @safekit/route package
