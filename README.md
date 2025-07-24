@@ -229,7 +229,17 @@ const url = await router.href({
 });
 
 // Default (brackets) serialization output:
-// https://api.example.com/users?filter[status]=active&filter[age]=21&filter[userIds][]=abc1&filter[userIds][]=xyz2&orderBy[][field]=lastName&orderBy[][direction]=asc&orderBy[][field]=createdAt&orderBy[][direction]=desc&page=20&limit=10
+https://api.example.com/users?
+  filter[status]=active&
+  filter[age]=21&
+  filter[userIds][]=abc1&
+  filter[userIds][]=xyz2&
+  orderBy[][field]=lastName&
+  orderBy[][direction]=asc&
+  orderBy[][field]=createdAt&
+  orderBy[][direction]=desc&
+  page=20&
+  limit=10
 ```
 
 ## Query String Serialization
