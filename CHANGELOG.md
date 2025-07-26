@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [0.2.0] - 2025-07-26
+
 ### Improved
 - Enhanced type safety by eliminating all explicit `any` types throughout codebase
 - Removed unnecessary runtime type assertions in validation pipeline
@@ -17,8 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Schema outputs for params and query are now constrained to `Record<string, unknown>`
 - Replaced runtime casting with compile-time type constraints
-
-## [0.2.0] - 2025-07-26
 
 ### Added
 - Enhanced Zod v4 coercion support with proper input/output type inference
@@ -43,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Factory pattern for validator creation
 - Support for Yup validation library
-- Support for Runtypes validation library  
+- Support for Runtypes validation library
 - Support for Superstruct validation library
 - Unused utility types (`Prettify`, `Simplify`, `InferParams`, `InferQuery`, `InferSchemaOutput`)
 - Central `types.ts` file and `libs/` directory structure
