@@ -18,7 +18,7 @@ const basicRouter = router.register([
 
 function basicExamples() {
   console.log("=== BASIC USAGE ===");
-  
+
   const homePath = basicRouter.path({ path: "/home" });
   console.log("Home path:", homePath);
 
@@ -64,7 +64,7 @@ const validationRouter = createRouter({
 
 function validationExamples() {
   console.log("\n=== PARAMS AND QUERY WITH VALIDATION ===");
-  
+
   // Example 1: Using params (schema required)
   try {
     const userPath = validationRouter.path({
@@ -132,14 +132,14 @@ const data = {
 
 function serializerExamples() {
   console.log("\n=== QUERY SERIALIZERS ===");
-  
+
   const bracketRouter = createRouter({
     baseUrl: "https://api.example.com",
     querySerializer: querySerializers.brackets
   }).register([{ path: "/search", query: searchQuerySchema }] as const);
 
   const commaRouter = createRouter({
-    baseUrl: "https://api.example.com", 
+    baseUrl: "https://api.example.com",
     querySerializer: querySerializers.comma
   }).register([{ path: "/search", query: searchQuerySchema }] as const);
 
@@ -163,53 +163,6 @@ function serializerExamples() {
 }
 
 // ========================================================================
-// CUSTOM VALIDATION
-// ========================================================================
-
-// Custom validation schema - shows non-Zod schema usage
-const customTokenSchema = {
-  parse: (input: any) => {
-    if (!input.token || input.token.length !== 32) {
-      throw new Error('Token must be exactly 32 characters');
-    }
-    return input;
-  }
-};
-
-// You could also use a function directly:
-// const customParamValidator = (input: any) => { ... };
-
-const customRouter = createRouter().register([
-  {
-    path: "/auth/:token",
-    params: customTokenSchema // Custom schema (not Zod)
-  }
-] as const);
-
-function customValidationExamples() {
-  console.log("\n=== CUSTOM VALIDATION ===");
-  
-  try {
-    const validPath = customRouter.path({
-      path: "/auth/:token",
-      params: { token: "a".repeat(32) }
-    });
-    console.log("Valid token path:", validPath);
-  } catch (error) {
-    console.error("Validation error:", error);
-  }
-
-  try {
-    customRouter.path({
-      path: "/auth/:token",
-      params: { token: "short" }
-    });
-  } catch (error) {
-    console.log("Expected validation error:", (error as Error).message);
-  }
-}
-
-// ========================================================================
 // RUN ALL EXAMPLES
 // ========================================================================
 
@@ -217,7 +170,7 @@ function runAllExamples() {
   basicExamples();
   validationExamples();
   serializerExamples();
-  customValidationExamples();
+  // customValidationExamples();
 }
 
 runAllExamples();

@@ -24,13 +24,6 @@ export default [
     },
     rules: {
       ...tseslint.configs.recommended.rules,
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-empty-object-type": "off",
-      // Disable base no-redeclare and use TypeScript version for function overloads
-      "no-redeclare": "off",
-      "@typescript-eslint/no-redeclare": "error",
-      // Add your custom ESLint rules here
-      // Example: "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }]
     },
   },
   prettierConfig,

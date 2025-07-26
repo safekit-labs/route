@@ -2,12 +2,9 @@ import { describe, it, expect } from "vitest";
 import { createRouter } from "@/index";
 import { z as zod3 } from "zod/v3";
 import { z as zod4 } from "zod/v4";
-import * as yup from "yup";
-import * as st from "superstruct";
 import * as v from "valibot";
 import * as arktype from "arktype";
 import { Schema } from "effect";
-import * as T from "runtypes";
 
 describe("Validation Library Support", () => {
   describe("Zod v3 schemas", () => {
@@ -118,88 +115,127 @@ describe("Validation Library Support", () => {
 
       const path = router.path({
         path: "/api/data",
-        // @ts-expect-error - testing coercion from string values
         query: { count: "5", enabled: "true", tags: ["a", "b"] },
       });
       expect(path).toMatch(/count=5/);
       expect(path).toMatch(/enabled=true/);
     });
-  });
 
-  describe("Yup schemas", () => {
-    it("should validate params with Yup schema", () => {
+    it("should handle Zod v4 coercion with proper input/output types", () => {
+      // Create schema with coercion: string input -> number output
+      const paginationSchema = zod4.object({
+        page: zod4.coerce.number<string>(), // Input: string, Output: number
+        limit: zod4.coerce.number<string>().int().positive(),
+        offset: zod4.coerce.number<string | number>().optional(), // Input: string | number, Output: number | undefined
+      });
+
       const router = createRouter().register([
         {
-          path: "/profiles/:userId",
-          params: yup.object({
-            userId: yup.string().min(5).required(),
-          }),
+          path: "/api/items",
+          query: paginationSchema,
         },
       ] as const);
 
+      // Test with string inputs (should be accepted and coerced to numbers)
       const path = router.path({
-        path: "/profiles/:userId",
-        params: { userId: "user12345" },
-      });
-      expect(path).toBe("/profiles/user12345");
-
-      expect(() =>
-        router.path({
-          path: "/profiles/:userId",
-          params: { userId: "usr" },
-        }),
-      ).toThrow();
-    });
-
-    it("should validate query with Yup schema", () => {
-      const router = createRouter().register([
-        {
-          path: "/api/users",
-          query: yup.object({
-            search: yup.string().optional(),
-            limit: yup.number().min(1).max(100).required(),
-          }),
+        path: "/api/items",
+        query: {
+          page: "1",      // string -> number
+          limit: "10",    // string -> number
+          offset: "20"    // string -> number
         },
-      ] as const);
-
-      const path = router.path({
-        path: "/api/users",
-        query: { search: "john", limit: 50 },
       });
-      expect(path).toMatch(/limit=50/);
 
-      expect(() =>
-        router.path({
-          path: "/api/users",
-          query: { limit: 200 },
-        }),
-      ).toThrow();
+      expect(path).toMatch(/page=1/);
+      expect(path).toMatch(/limit=10/);
+      expect(path).toMatch(/offset=20/);
     });
-  });
 
-  describe("Superstruct schemas", () => {
-    it("should validate params with Superstruct schema", () => {
+    it("should validate Zod v4 coercion transforms string to number", () => {
+      const schema = zod4.object({
+        count: zod4.coerce.number<string>(),
+        price: zod4.coerce.number<string>().multipleOf(0.01), // For currency
+      });
+
       const router = createRouter().register([
         {
           path: "/products/:productId",
-          params: st.object({
-            productId: st.pattern(st.string(), /^prod_\w+$/),
-          }),
+          params: zod4.object({ productId: zod4.string() }),
+          query: schema,
         },
       ] as const);
 
+      // Should accept string inputs and coerce to numbers
       const path = router.path({
         path: "/products/:productId",
-        params: { productId: "prod_123abc" },
+        params: { productId: "prod123" },
+        query: {
+          count: "42",     // string input
+          price: "19.99"   // string input
+        },
       });
-      expect(path).toBe("/products/prod_123abc");
 
-      expect(() =>
-        router.path({
-          path: "/products/:productId",
-          params: { productId: "invalid" },
-        }),
-      ).toThrow();
+      expect(path).toBe("/products/prod123?count=42&price=19.99");
+    });
+
+    it("should handle mixed coercion types properly", () => {
+      const mixedSchema = zod4.object({
+        stringToNumber: zod4.coerce.number<string>(),
+        stringToBoolean: zod4.coerce.boolean<string>(),
+        numberToString: zod4.coerce.string<number>(),
+        anyToNumber: zod4.coerce.number(), // accepts any input type
+      });
+
+      const router = createRouter().register([
+        {
+          path: "/test",
+          query: mixedSchema,
+        },
+      ] as const);
+
+      const path = router.path({
+        path: "/test",
+        query: {
+          stringToNumber: "123",    // string -> number
+          stringToBoolean: "true",  // string -> boolean
+          numberToString: 456,      // number -> string
+          anyToNumber: "789",       // any -> number
+        },
+      });
+
+      expect(path).toMatch(/stringToNumber=123/);
+      expect(path).toMatch(/stringToBoolean=true/);
+      expect(path).toMatch(/numberToString=456/);
+      expect(path).toMatch(/anyToNumber=789/);
+    });
+
+    it("should properly handle StandardSchemaV1.InferInput vs InferOutput types", () => {
+      // Create a schema where input and output types differ due to coercion
+      const coercionSchema = zod4.object({
+        page: zod4.coerce.number<string>(), // Input: string, Output: number
+        limit: zod4.coerce.number<string>(),
+      });
+
+      const router = createRouter().register([
+        {
+          path: "/pagination",
+          query: coercionSchema,
+        },
+      ] as const);
+
+      // This should work - passing string inputs that get coerced to numbers
+      const path = router.path({
+        path: "/pagination",
+        query: {
+          page: "1",    // string input (InferInput type)
+          limit: "20",  // string input (InferInput type)
+        },
+      });
+
+      expect(path).toBe("/pagination?page=1&limit=20");
+
+      // The validation should have coerced strings to numbers internally
+      // (this tests that our standardValidate function properly handles the transformation)
     });
   });
 
@@ -323,112 +359,6 @@ describe("Validation Library Support", () => {
     });
   });
 
-  describe("Runtypes schemas", () => {
-    it("should validate params with Runtypes schema", () => {
-      const router = createRouter().register([
-        {
-          path: "/docs/:docId",
-          params: T.Object({
-            docId: T.String,
-          }),
-        },
-      ] as const);
-
-      const path = router.path({
-        path: "/docs/:docId",
-        params: { docId: "doc123" },
-      });
-      expect(path).toBe("/docs/doc123");
-    });
-
-    it("should validate query with Runtypes schema", () => {
-      const router = createRouter().register([
-        {
-          path: "/documents",
-          query: T.Object({
-            search: T.String,
-            archived: T.Boolean,
-          }),
-        },
-      ] as const);
-
-      const path = router.path({
-        path: "/documents",
-        query: { search: "report", archived: false },
-      });
-      expect(path).toMatch(/search=report/);
-      expect(path).toMatch(/archived=false/);
-    });
-  });
-
-  describe("Custom function validators", () => {
-    it("should validate params with custom function", () => {
-      const customValidator = (input: any) => {
-        if (!input.token || typeof input.token !== "string") {
-          throw new Error("Token is required and must be a string");
-        }
-        if (input.token.length !== 32) {
-          throw new Error("Token must be exactly 32 characters");
-        }
-        return input;
-      };
-
-      const router = createRouter().register([
-        {
-          path: "/auth/:token",
-          params: customValidator,
-        },
-      ] as const);
-
-      const validToken = "a".repeat(32);
-      const path = router.path({
-        path: "/auth/:token",
-        params: { token: validToken },
-      });
-      expect(path).toBe(`/auth/${validToken}`);
-
-      expect(() =>
-        router.path({
-          path: "/auth/:token",
-          params: { token: "short" },
-        }),
-      ).toThrow("Token must be exactly 32 characters");
-    });
-
-    it("should validate query with custom function", () => {
-      const customValidator = (input: any) => {
-        const validated = { ...input };
-        if (validated.version) {
-          const version = Number(validated.version);
-          if (isNaN(version) || version < 1 || version > 10) {
-            throw new Error("Version must be between 1 and 10");
-          }
-          validated.version = version;
-        }
-        return validated;
-      };
-
-      const router = createRouter().register([
-        {
-          path: "/api",
-          query: customValidator,
-        },
-      ] as const);
-
-      const path = router.path({
-        path: "/api",
-        query: { action: "list", version: 3 },
-      });
-      expect(path).toMatch(/version=3/);
-
-      expect(() =>
-        router.path({
-          path: "/api",
-          query: { version: 15 },
-        }),
-      ).toThrow("Version must be between 1 and 10");
-    });
-  });
 
   describe("Standard Schema v1 format", () => {
     it("should validate params with Standard Schema", () => {

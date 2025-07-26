@@ -1,20 +1,26 @@
-import type { QuerySerializers } from "./types";
 import qs from "qs";
 
+export interface QuerySerializers {
+  brackets: (query: Record<string, unknown>) => string;
+  indices: (query: Record<string, unknown>) => string;
+  comma: (query: Record<string, unknown>) => string;
+  native: (query: Record<string, unknown>) => string;
+}
+
 export const querySerializers: QuerySerializers = {
-  brackets: (query: Record<string, any>) => {
+  brackets: (query: Record<string, unknown>) => {
     return qs.stringify(query, { arrayFormat: 'brackets' });
   },
 
-  indices: (query: Record<string, any>) => {
+  indices: (query: Record<string, unknown>) => {
     return qs.stringify(query, { arrayFormat: 'indices' });
   },
 
-  comma: (query: Record<string, any>) => {
+  comma: (query: Record<string, unknown>) => {
     return qs.stringify(query, { arrayFormat: 'comma' });
   },
 
-  native: (query: Record<string, any>) => {
+  native: (query: Record<string, unknown>) => {
     // Use URLSearchParams for native browser format
     const params = new URLSearchParams();
     Object.entries(query).forEach(([key, value]) => {

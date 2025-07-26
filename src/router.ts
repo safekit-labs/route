@@ -1,23 +1,49 @@
-import type { RouteDefinition, QuerySerializer, SchemaValidator, InferSchemaOutput } from "./types";
-import { createParseFn } from "./parser";
+import type { StandardSchemaV1 } from "./standard-schema";
+import { standardValidate } from "./validator";
 import qs from "qs";
+
+// ========================================================================
+// TYPES AND INTERFACES
+// ========================================================================
+
+export interface RouteDefinition {
+  path: string;
+  params?: StandardSchemaV1<unknown, Record<string, unknown>>;
+  query?: StandardSchemaV1<unknown, Record<string, unknown>>;
+}
+
+export type QuerySerializer = (query: Record<string, unknown>) => string;
 
 export interface RouterOptions {
   baseUrl?: string;
-  querySerializer?: (query: Record<string, any>) => string;
+  querySerializer?: (query: Record<string, unknown>) => string;
 }
 
 type ExtractRouteByPath<TDefs extends RouteDefinition, TPath> = Extract<TDefs, { path: TPath }>;
 
-// Simplified approach - always allow optional params/query
+// Type utilities following better-call pattern
+type InferParamsInput<T> = T extends StandardSchemaV1 
+  ? StandardSchemaV1.InferInput<T> 
+  : Record<string, unknown>;
+
+type InferParamsOutput<T> = T extends StandardSchemaV1 
+  ? StandardSchemaV1.InferOutput<T> 
+  : Record<string, unknown>;
+
+type InferQueryInput<T> = T extends StandardSchemaV1 
+  ? StandardSchemaV1.InferInput<T> 
+  : Record<string, unknown>;
+
+type InferQueryOutput<T> = T extends StandardSchemaV1 
+  ? StandardSchemaV1.InferOutput<T> 
+  : Record<string, unknown>;
+
+// Using Standard Schema built-in type inference utilities
+// User passes InferInput types, validation produces InferOutput types
 type BuildOptions<TRoute extends RouteDefinition> = {
   path: TRoute["path"];
-  params?: TRoute["params"] extends SchemaValidator<any>
-    ? InferSchemaOutput<TRoute["params"]>
-    : Record<string, any>;
-  query?: TRoute["query"] extends SchemaValidator<any>
-    ? InferSchemaOutput<TRoute["query"]>
-    : Record<string, any>;
+  params?: InferParamsInput<TRoute["params"]>;
+  query?: InferQueryInput<TRoute["query"]>;
 };
 
 type PathOptions<TDefs extends RouteDefinition, TPath extends TDefs["path"]> = BuildOptions<
@@ -28,6 +54,11 @@ type UrlOptions<TDefs extends RouteDefinition, TPath extends TDefs["path"]> = Pa
   TDefs,
   TPath
 > & { baseUrl?: string };
+
+// ========================================================================
+// ROUTER IMPLEMENTATION
+// ========================================================================
+
 
 export class Router<TDefs extends RouteDefinition = never> {
   private definitions = new Map<string, RouteDefinition>();
@@ -63,30 +94,26 @@ export class Router<TDefs extends RouteDefinition = never> {
       throw new Error(`Route pattern "${String(options.path)}" has not been registered`);
     }
 
-    const params = (options as any).params || {};
-    const query = (options as any).query || {};
+    const params = options.params || {};
+    const query = options.query || {};
 
     const paramNames = this.extractParamNames(definition.path);
     for (const paramName of paramNames) {
-      if (!(paramName in (params as Record<string, any>))) {
+      if (!(paramName in (params as Record<string, unknown>))) {
         throw new Error(
           `Missing required path parameter "${paramName}" for route "${String(options.path)}"`,
         );
       }
     }
 
-    let validatedParams = params;
+    let validatedParams: InferParamsOutput<typeof definition.params> = params;
     if (definition.params) {
-      const parseFn = createParseFn(definition.params);
-      const result = parseFn(params);
-      validatedParams = result as typeof params;
+      validatedParams = standardValidate(definition.params, params);
     }
 
-    let validatedQuery = query;
+    let validatedQuery: InferQueryOutput<typeof definition.query> = query;
     if (definition.query) {
-      const parseFn = createParseFn(definition.query);
-      const result = parseFn(query);
-      validatedQuery = result as typeof query;
+      validatedQuery = standardValidate(definition.query, query);
     }
 
     return {
@@ -98,8 +125,8 @@ export class Router<TDefs extends RouteDefinition = never> {
 
   private buildPathAndQuery(
     definition: RouteDefinition,
-    params: Record<string, any>,
-    query: Record<string, any>,
+    params: Record<string, unknown>,
+    query: Record<string, unknown>,
   ): string {
     let pathString = definition.path;
     const paramNames = this.extractParamNames(pathString);

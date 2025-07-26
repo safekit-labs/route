@@ -9,7 +9,7 @@ A type-safe URL builder with validation support for TypeScript applications. Bui
 ## Features
 
 - ✅ **Type-safe** - Full TypeScript support with path and query parameter inference
-- ✅ **Validation** - Support for any Standard Schema validation library (Zod, Yup, Valibot, etc.)
+- ✅ **Validation** - Support for Standard Schema compatible validation libraries (Zod, Valibot, ArkType, etc.)
 - ✅ **Flexible** - Multiple query string serialization formats
 - ✅ **Lightweight** - Only depends on `qs` for query serialization
 - ✅ **Framework agnostic** - Works with any TypeScript project
@@ -174,13 +174,13 @@ Registers route definitions with the router.
 ```typescript
 interface RouteDefinition {
   path: string; // URL pattern with :param syntax
-  // A Zod, Yup, Valibot, or other standard-schema compatible object
-  params?: AnySchemaObject;
-  query?: AnySchemaObject;
+  // Standard Schema compatible objects that produce object-like outputs
+  params?: StandardSchemaV1<unknown, Record<string, unknown>>;
+  query?: StandardSchemaV1<unknown, Record<string, unknown>>;
 }
 ```
 
-**Note:** To use `params` or `query` parameters, you must register validation schemas during route registration for type safety.
+**Note:** To use `params` or `query` parameters, you must register validation schemas during route registration for type safety. Schemas must produce object-like outputs (e.g., `Record<string, unknown>`) to work with the router's path parameter and query serialization features.
 
 ### Methods
 
@@ -258,14 +258,15 @@ const paths = router.paths();
 
 ## Validation Support
 
-The package supports any validation library that follows the Standard Schema specification or provides common validation methods:
+The package supports any validation library that follows the [Standard Schema specification](https://github.com/standard-schema/standard-schema):
 
-- Zod (v3 and v4)
-- Yup
-- Superstruct
-- Valibot
-- Custom validators
-- Any Standard Schema compatible library
+- **Zod** (v3 and v4) - Use schemas directly or with `.standardSchema()` method
+- **Valibot** - Use schemas directly with Standard Schema support
+- **ArkType** - Use schemas directly with Standard Schema support  
+- **Effect Schema** - Use with `Schema.standardSchemaV1()` wrapper
+- Any other Standard Schema v1 compatible library
+
+All validation libraries must implement the Standard Schema interface with a `"~standard"` property containing the validation logic.
 
 ## Nested Objects and Complex Query Parameters
 
