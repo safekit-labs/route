@@ -4,6 +4,7 @@
  */
 
 /* eslint-disable @typescript-eslint/no-namespace */
+/* eslint-disable @typescript-eslint/naming-convention */
 
 /** The Standard Schema interface. */
 export interface StandardSchemaV1<Input = unknown, Output = Input> {
@@ -72,4 +73,22 @@ export declare namespace StandardSchemaV1 {
   export type InferOutput<Schema extends StandardSchemaV1> = NonNullable<
     Schema["~standard"]["types"]
   >["output"];
+}
+
+/** A schema error with useful information. */
+
+export class StandardSchemaV1Error extends Error {
+  /** The schema issues. */
+  public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>;
+
+  /**
+   * Creates a schema error with useful information.
+   *
+   * @param issues The schema issues.
+   */
+  constructor(issues: ReadonlyArray<StandardSchemaV1.Issue>) {
+    super(issues[0]?.message);
+    this.name = "SchemaError";
+    this.issues = issues;
+  }
 }

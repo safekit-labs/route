@@ -1,4 +1,4 @@
-import type { StandardSchemaV1 } from "./libs/standard-schema-v1/spec";
+import type { StandardSchemaV1 } from "./standard-schema";
 
 /**
  * Schema validation function type - supports multiple validation libraries

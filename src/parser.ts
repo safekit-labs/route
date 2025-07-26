@@ -2,7 +2,7 @@
 // SCHEMA PARSING UTILITIES
 // ========================================================================
 
-import { StandardSchemaV1Error } from "./libs/standard-schema-v1/error";
+import { StandardSchemaV1Error } from "./standard-schema";
 
 import type { SchemaValidator } from "./types";
 
